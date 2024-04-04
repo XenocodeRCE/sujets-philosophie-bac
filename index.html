@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search SQL Data</title>
+    <style>
+        .search-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        #searchInput {
+            padding: 10px;
+            margin-right: 10px;
+        }
+
+        #searchResults {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Enter search term">
+        <button onclick="search()">Search</button>
+    </div>
+    <div id="searchResults"></div>
+
+    <script>
+        function search() {
+            var searchTerm = document.getElementById('searchInput').value;
+
+            // Load the .sql file
+            fetch('dissertations_bac.sql')
+                .then(response => response.text())
+                .then(data => {
+                    // Parse the SQL data
+                    var matches = parseSQL(data, searchTerm);
+                    displaySearchResults(matches);
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                });
+        }
+
+        function parseSQL(sqlData, searchTerm) {
+            // Split the SQL data into lines
+            var lines = sqlData.split('\n');
+            var matches = [];
+
+            // Loop through each line to find matches
+            lines.forEach(line => {
+                if (line.toLowerCase().includes(searchTerm.toLowerCase())) {
+                    matches.push(line);
+                }
+            });
+
+            return matches;
+        }
+
+        function displaySearchResults(matches) {
+            var searchResultsContainer = document.getElementById('searchResults');
+            searchResultsContainer.innerHTML = '';
+
+            if (matches.length === 0) {
+                searchResultsContainer.innerHTML = 'No results found.';
+                return;
+            }
+
+            var resultList = document.createElement('ul');
+            matches.forEach(match => {
+                var listItem = document.createElement('li');
+                listItem.textContent = match;
+                resultList.appendChild(listItem);
+            });
+
+            searchResultsContainer.appendChild(resultList);
+        }
+    </script>
+</body>
+</html>
