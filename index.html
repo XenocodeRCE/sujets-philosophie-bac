@@ -3,8 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search SQL Data</title>
+    <title>Search and Display SQL Data</title>
     <style>
+        /* CSS styles for table */
+        #searchResults {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        #searchResults th, #searchResults td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        #searchResults th {
+            background-color: #f2f2f2;
+        }
+
         .search-container {
             margin-top: 20px;
             text-align: center;
@@ -15,68 +32,203 @@
             margin-right: 10px;
         }
 
-        #searchResults {
-            margin-top: 20px;
-        }
+        .highlight {
+    background-color: yellow;
+    font-weight: bold;
+}
+
     </style>
+    <script type="module" src="https://md-block.verou.me/md-block.js"></script>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
+
+    <!-- jQuery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <!-- Bootstrap DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+
+    <!-- Bootstrap DataTables JavaScript -->
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+
+
 </head>
 <body>
     <div class="search-container">
-        <input type="text" id="searchInput" placeholder="Enter search term">
-        <button onclick="search()">Search</button>
+        <input type="text" id="searchInput" placeholder="Entrez un mot, une notion...">
+        <button onclick="search()">Chercher</button>
     </div>
-    <div id="searchResults"></div>
+    <table id="searchResults" class="table">
+        <thead>
+            <tr>
+                <th>Année</th>
+                <th>Série</th>
+                <th>Lieu</th>
+                <th>Session</th>
+                <th>Sujet</th>
+                <th>Notion 1</th>
+                <th>Notion 2</th>
+                <th>Brouillon</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+        </tbody>
+    </table>
 
     <script>
-        function search() {
-            var searchTerm = document.getElementById('searchInput').value;
+function search() {
+    var searchTerm = document.getElementById('searchInput').value;
 
-            // Load the .sql file
-            fetch('dissertations_bac.sql')
-                .then(response => response.text())
-                .then(data => {
-                    // Parse the SQL data
-                    var matches = parseSQL(data, searchTerm);
-                    displaySearchResults(matches);
-                })
-                .catch(error => {
-                    console.error('Error fetching data:', error);
+    // Load the .sql file
+    fetch('dissertations_bac.sql')
+        .then(response => response.text())
+        .then(data => {
+            // Parse the SQL data and populate the table
+            populateTable(data, searchTerm);
+        })
+        .catch(error => {
+            console.error('Error fetching data:', error);
+        });
+}
+
+function populateTable(sqlData, searchTerm) {
+    let toSearch = searchTerm;
+    var lines = sqlData.split('\n');
+    var tableBody = document.getElementById('tableBody');
+    tableBody.innerHTML = ''; // Clear previous results
+
+    lines.forEach(line => {
+        let parts = line.split("', '");
+
+        // Now parts[0] will contain "part1" and parts[1] will contain "part2, part3"
+        //console.log(parts[0]); //(6, 1996, 'L
+        data = parts[0];
+        data = data.replace("(", "");
+        data = data.replace("'", "");
+
+        let partos = data.split(",");
+        let dissertID = partos[0];
+        let annee = partos[1];
+        //console.log(partos[1]);
+        let serie = partos[2];
+        //console.log(partos[2]);
+
+
+        let lieu = parts[1]; 
+        //console.log(parts[1]); //AMÉRIQUE DU NORD + LIBAN
+        let session = parts[2]; 
+        //console.log(parts[2]); //NORMALE
+        let sujet = parts[3]; 
+        //console.log(parts[3]); //Quelle réalité peut-on attribuer au temps ?
+        let notion_1 = parts[4]; 
+        //console.log(parts[4]); //temps
+        let notion_2 = parts[5]; 
+        //console.log(parts[5]); //raison
+
+        var finalsplit = notion_2 + "', '";
+        let brouillon = line.split(finalsplit)[1];
+        //console.log(brouillon);
+
+       
+        // annee serie lieu session sujet notion_1 notion_2 brouillon
+        if(notion_2 && notion_1 && sujet && annee && serie){
+
+            if (sujet.toLowerCase().includes(toSearch.toLowerCase())) {
+
+               
+
+                var row = document.createElement('tr');
+                var cell = document.createElement('td');
+                cell.textContent = annee;
+                row.appendChild(cell);
+                var cell1 = document.createElement('td');
+                cell1.textContent = serie;
+                row.appendChild(cell1);
+                var cell2 = document.createElement('td');
+                cell2.textContent = lieu;
+                row.appendChild(cell2);
+                var cell3 = document.createElement('td');
+                cell3.textContent = session;
+                row.appendChild(cell3);
+                var cell4 = document.createElement('td');
+
+                var partss = sujet.split(new RegExp('(' + toSearch + ')', 'gi')); // Split the sujet into parts including the search term
+                partss.forEach(function(part) {
+                    if (part.toLowerCase() === toSearch.toLowerCase()) {
+                        // Create a span element for the search term
+                        var span = document.createElement('span');
+                        span.textContent = part;
+                        span.classList.add('highlight');
+                        cell4.appendChild(span);
+                    } else {
+                        // Create a text node for other parts of the string
+                        cell4.appendChild(document.createTextNode(part));
+                    }
                 });
+
+                row.appendChild(cell4);
+                var cell5 = document.createElement('td');
+                cell5.textContent = notion_1;
+                row.appendChild(cell5);
+                var cell6 = document.createElement('td');
+                cell6.textContent = notion_2;
+                row.appendChild(cell6);
+                var cell7 = document.createElement('td');
+var link = document.createElement('a');
+link.href = 'https://lacavernedeplaton.fr/generateur-sujet.php?id=' + dissertID;
+link.textContent = 'https://lacavernedeplaton.fr/generateur-sujet.php?id=' + dissertID;
+cell7.appendChild(link);
+row.appendChild(cell7);
+
+
+                tableBody.appendChild(row);
+            } 
+
+            
+
+
         }
-
-        function parseSQL(sqlData, searchTerm) {
-            // Split the SQL data into lines
-            var lines = sqlData.split('\n');
-            var matches = [];
-
-            // Loop through each line to find matches
-            lines.forEach(line => {
-                if (line.toLowerCase().includes(searchTerm.toLowerCase())) {
-                    matches.push(line);
-                }
-            });
-
-            return matches;
-        }
-
-        function displaySearchResults(matches) {
-            var searchResultsContainer = document.getElementById('searchResults');
-            searchResultsContainer.innerHTML = '';
-
-            if (matches.length === 0) {
-                searchResultsContainer.innerHTML = 'No results found.';
-                return;
+        /*
+        var match = regex.exec(line);
+        if (match) {
+            var rowData = match[1].split(/,(?=(?:[^']*'[^']*')*[^']*$)/); // Split fields considering commas inside quotes
+            // Skip the first data (assumed to be the "id" column)
+            rowData.shift();
+            // Check if any of the fields contain the search term
+            if (rowData.some(cell => cell.toLowerCase().includes(searchTerm.toLowerCase()))) {
+                var row = document.createElement('tr');
+                rowData.forEach(cellData => {
+                    var cell = document.createElement('td');
+                    cell.textContent = cellData.trim(); // Trim whitespace
+                    row.appendChild(cell);
+                });
+                tableBody.appendChild(row);
             }
-
-            var resultList = document.createElement('ul');
-            matches.forEach(match => {
-                var listItem = document.createElement('li');
-                listItem.textContent = match;
-                resultList.appendChild(listItem);
-            });
-
-            searchResultsContainer.appendChild(resultList);
         }
+        */
+    });
+}
+
+// Get reference to the search input field
+var searchInput = document.getElementById('searchInput');
+
+// Add event listener for input event
+searchInput.addEventListener('input', function() {
+    var searchTerm = searchInput.value.trim(); // Get the trimmed value of the search input
+    // Load the .sql file
+    fetch('dissertations_bac.sql')
+        .then(response => response.text())
+        .then(data => {
+            // Parse the SQL data and populate the table
+            populateTable(data, searchTerm);
+        })
+        .catch(error => {
+            console.error('Error fetching data:', error);
+        });
+});
+
+
     </script>
 </body>
 </html>
